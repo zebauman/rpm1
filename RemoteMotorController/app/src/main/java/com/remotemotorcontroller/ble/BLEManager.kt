@@ -3,6 +3,7 @@ package com.remotemotorcontroller.ble
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -14,7 +15,7 @@ class BLEManager(context: Context) {
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
     private val scanner = bluetoothAdapter?.bluetoothLeScanner
-
+    private var onDeviceFound: ((BluetoothDevice) -> Unit)? = null
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun startScan() {
         if (scanner == null) {
@@ -36,14 +37,21 @@ class BLEManager(context: Context) {
         Log.i("BLE", "Scan Stopped.")
     }
 
+    fun connect(device: BluetoothDevice){
+
+    }
+
+    fun setDeviceFoundListener(listener: (BluetoothDevice) -> Unit){
+        onDeviceFound = listener
+    }
+
     @SuppressLint("MissingPermission")
     private val leScanCallback = object : ScanCallback() {
 
         // Called when a device is found immediately
-        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
+            onDeviceFound?.invoke(device)
             Log.i("BLE", "Device found: ${device.name ?: "Unknown"} - ${device.address}")
         }
 
