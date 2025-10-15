@@ -10,12 +10,27 @@ import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import com.remotemotorcontroller.adapter.BleTimeDevice
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.Instant
 
 class BLEManager(context: Context) {
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
     private val scanner = bluetoothAdapter?.bluetoothLeScanner
-    private var onDeviceFound: ((BluetoothDevice) -> Unit)? = null
+    // FUNCTION TO CALL WHEN A DEVICE IS FOUND
+    private var onDeviceFound: ((BleTimeDevice) -> Unit)? = null
+    private val scannedDevices = mutableListOf<BleTimeDevice>()
+
+    // COROUTINE SCOPE TO MANAGE BACKGROUND JOB's LIFECYCLE
+    //COROUTINE is A FUNCTION THAT CAN PAUSE AND RESUME ITS EXECUTION WITHOUT BLOCKING THE THREAD
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
+    private var cleanupJob: Job? = null
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun startScan() {
         if (scanner == null) {
@@ -26,22 +41,27 @@ class BLEManager(context: Context) {
             Log.e("BLE", "Bluetooth is disabled")
             return
         }
+        // DON'T START MULTIPLE JOBS -> ONLY ONE
+        if(cleanupJob == null || !cleanupJob!!.isActive){
+            cleanupJob = startCleanupJob()
+        }
 
-        Log.i("BLE", "Starting BLE scan...")
         scanner.startScan(leScanCallback)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun stopScan() {
         scanner?.stopScan(leScanCallback)
-        Log.i("BLE", "Scan Stopped.")
+        // CANCEL THE JOB TO STOP THE INFINITE LOOP
+        cleanupJob?.cancel()
+        cleanupJob = null
     }
 
     fun connect(device: BluetoothDevice){
 
     }
 
-    fun setDeviceFoundListener(listener: (BluetoothDevice) -> Unit){
+    fun setDeviceFoundListener(listener: (BleTimeDevice) -> Unit){
         onDeviceFound = listener
     }
 
@@ -50,23 +70,50 @@ class BLEManager(context: Context) {
 
         // Called when a device is found immediately
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val device = result.device
-            onDeviceFound?.invoke(device)
-            Log.i("BLE", "Device found: ${device.name ?: "Unknown"} - ${device.address}")
-        }
+            val device = result.device ?: return
 
-        // Called when multiple devices are found in a batch
-        override fun onBatchScanResults(results: List<ScanResult>?) {
-            results?.forEach { scanResult ->
-                val device = scanResult.device
-                Log.i("BLE", "Device found (batch): ${device.name ?: "Unknown"} - ${device.address}")
+            val existing = scannedDevices.find{ it.bDevice.address == device.address}
+            val now = Instant.now()
+
+            if(existing != null){
+                existing.time = now
+                existing.rssi = result.rssi
+                existing.isConnectable = result.isConnectable
+                // INVOKE IS UPDATING THE UI EVERY TIE THE DEVICE IS FOUND/UPDATED -> CALLBACK FUNCTION
+                onDeviceFound?.invoke(existing)
+            }else{
+                val newDevice = BleTimeDevice(
+                    device,
+                    result.rssi,
+                    result.isConnectable,
+                    now)
+                scannedDevices.add(newDevice)
+                onDeviceFound?.invoke(newDevice)
             }
-            super.onBatchScanResults(results)
         }
 
         override fun onScanFailed(errorCode: Int){
             Log.e("BLE", "Scan failed with error code $errorCode")
         }
     }
+
+    private fun startCleanupJob() : Job{
+        return coroutineScope.launch {
+
+            delay(5000)
+            val now = Instant.now()
+            val timeout = Duration.ofSeconds(10)
+
+            val iterator = scannedDevices.iterator()
+            while(iterator.hasNext()){
+                val device = iterator.next()
+                val age = Duration.between(device.time, now)
+                if(age > timeout){
+                    iterator.remove()
+                }
+            }
+        }
+    }
+
 
 }

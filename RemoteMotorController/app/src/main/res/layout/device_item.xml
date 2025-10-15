@@ -23,4 +23,22 @@
             android:textSize="14sp"
             android:textColor="@android:color/darker_gray"
             />
-    </LinearLayout>
+        <TextView
+            android:id="@+id/deviceRsi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            />
+        <TextView
+            android:id="@+id/deviceTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="00:00:00"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            />
+
+
+</LinearLayout>

@@ -53,14 +53,13 @@ class MainActivity : AppCompatActivity() {
         bleManager = BLEManager(this)
         bleManager.setDeviceFoundListener{ device ->
             runOnUiThread {
-                deviceAdapter.addDevice(device)
+                deviceAdapter.addOrUpdateDevice(device)
             }
         }
         scanButton = findViewById(R.id.scanButton)
         scanButton.setOnClickListener {
             toggleScan()
         }
-
     }
 
     private fun toggleScan(){
