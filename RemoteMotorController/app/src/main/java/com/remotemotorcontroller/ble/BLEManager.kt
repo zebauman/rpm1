@@ -4,7 +4,10 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
@@ -19,52 +22,57 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 
-class BLEManager(context: Context) {
+class BLEManager(private val context: Context) {
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
     private val scanner = bluetoothAdapter?.bluetoothLeScanner
+    private val scannedDevices = mutableListOf<BleTimeDevice>()
+
+    // BLE GATT CLIENT -> ALLOWS FOR CONNECTION TO BLE GATT SERVERS
+    // INFORMATION REGARDING DISCOVERING SERVICES, READING, AND WRITING CHARACTERISTICS
+    private var bluetoothGatt: BluetoothGatt? = null
+    private var connectedDevice: BluetoothDevice? = null
+
+    // FUNCTION TO NOTIFY THE APP WHEN CONNECTION STATE CHANGES -> LISTENER FUNCTIONS
+    private var onConnectionStateChange: ((BluetoothDevice, Boolean) -> Unit)? = null
+
     // FUNCTION TO CALL WHEN A DEVICE IS FOUND
     private var onDeviceFound: ((BleTimeDevice) -> Unit)? = null
-    private val scannedDevices = mutableListOf<BleTimeDevice>()
 
     // COROUTINE SCOPE TO MANAGE BACKGROUND JOB's LIFECYCLE
     //COROUTINE is A FUNCTION THAT CAN PAUSE AND RESUME ITS EXECUTION WITHOUT BLOCKING THE THREAD
     private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
     private var cleanupJob: Job? = null
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    fun startScan() {
-        if (scanner == null) {
-            Log.e("BLE", "Bluetooth scanner not available.")
-            return
+
+    // CALLBACK FUNCTIONS
+
+    // CALLBACK FUNCTION FOR GATT
+    private val gattCallback = object : BluetoothGattCallback() {
+        // FUNCTION WHEN THE CONNECTION STATE CHANGES OF THE CONNECTED DEVICE -> MANAGED BY GATT
+        @SuppressLint("MissingPermission")
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            if(newState == BluetoothProfile.STATE_CONNECTED){
+                Log.i("BLE", "CONNECTED TO ${gatt.device?.address}")
+                onConnectionStateChange?.invoke(gatt.device, true)
+                gatt.discoverServices()
+            }else if(newState == BluetoothProfile.STATE_DISCONNECTED){
+                Log.i("BLE", "DISCONNECTED FROM ${gatt.device?.address}")
+                onConnectionStateChange?.invoke(gatt.device, false)
+                gatt.close()
+                bluetoothGatt = null
+            }
         }
-        if(!(bluetoothAdapter?.isEnabled ?: false)){
-            Log.e("BLE", "Bluetooth is disabled")
-            return
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            if(status == BluetoothGatt.GATT_SUCCESS){
+                Log.i("BLE", "SERVICES DISCOVERED for ${gatt.device?.address}")
+            }else{
+                Log.e("BLE", "FAILED TO DISCOVER SERVICES for ${gatt.device?.address}")
+            }
         }
-        // DON'T START MULTIPLE JOBS -> ONLY ONE
-        if(cleanupJob == null || !cleanupJob!!.isActive){
-            cleanupJob = startCleanupJob()
-        }
-
-        scanner.startScan(leScanCallback)
-    }
-
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    fun stopScan() {
-        scanner?.stopScan(leScanCallback)
-        // CANCEL THE JOB TO STOP THE INFINITE LOOP
-        cleanupJob?.cancel()
-        cleanupJob = null
-    }
-
-    fun connect(device: BluetoothDevice){
 
     }
 
-    fun setDeviceFoundListener(listener: (BleTimeDevice) -> Unit){
-        onDeviceFound = listener
-    }
-
+    // CALLBACK FUNCTION FOR BLE SCAN
     @SuppressLint("MissingPermission")
     private val leScanCallback = object : ScanCallback() {
 
@@ -95,6 +103,48 @@ class BLEManager(context: Context) {
         override fun onScanFailed(errorCode: Int){
             Log.e("BLE", "Scan failed with error code $errorCode")
         }
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
+    fun startScan() {
+        if (scanner == null) {
+            Log.e("BLE", "Bluetooth scanner not available.")
+            return
+        }
+        if(!(bluetoothAdapter?.isEnabled ?: false)){
+            Log.e("BLE", "Bluetooth is disabled")
+            return
+        }
+        // DON'T START MULTIPLE JOBS -> ONLY ONE
+        if(cleanupJob == null || !cleanupJob!!.isActive){
+            cleanupJob = startCleanupJob()
+        }
+
+        scanner.startScan(leScanCallback)
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
+    fun stopScan() {
+        scanner?.stopScan(leScanCallback)
+        // CANCEL THE JOB TO STOP THE INFINITE LOOP
+        cleanupJob?.cancel()
+        cleanupJob = null
+    }
+
+    @SuppressLint("MissingPermission")
+    fun connect(device: BluetoothDevice){
+        bluetoothGatt?.close() // CLOSE ANY PREVIOUS CONNECTIONS
+        connectedDevice = device
+        bluetoothGatt = device.connectGatt(context, false, gattCallback)
+    }
+
+    // LISTENER FUNCTIONS
+    fun setDeviceFoundListener(listener: (BleTimeDevice) -> Unit){
+        onDeviceFound = listener
+    }
+
+    fun setConnectionStateListener(listener: (BluetoothDevice, Boolean) -> Unit) {
+        onConnectionStateChange = listener
     }
 
     private fun startCleanupJob() : Job{

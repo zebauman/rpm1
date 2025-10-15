@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -39,6 +40,7 @@ class MainActivity : AppCompatActivity() {
         else Log.e("MainActivity", "Cannot scan: missing permissions")
     }
 
+    @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -56,6 +58,17 @@ class MainActivity : AppCompatActivity() {
                 deviceAdapter.addOrUpdateDevice(device)
             }
         }
+
+        bleManager.setConnectionStateListener { device, connected ->
+            runOnUiThread {
+                if(connected){
+                    Toast.makeText(this, "Connected to ${device.name ?: "Unknown"}", Toast.LENGTH_SHORT).show()
+                }else{
+                    Toast.makeText(this, "Disconnected from ${device.name ?: "Unknown"}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         scanButton = findViewById(R.id.scanButton)
         scanButton.setOnClickListener {
             toggleScan()
@@ -99,7 +112,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun connectToDevice(device: BluetoothDevice){
         Log.i("MainActivity", "Connecting to ${device.name ?: "Unknown"} - ${device.address}")
-        // bleManager.connect(device)
+        bleManager.connect(device)
     }
 
 }
