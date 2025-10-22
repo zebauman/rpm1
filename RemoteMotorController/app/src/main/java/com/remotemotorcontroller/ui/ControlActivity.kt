@@ -1,5 +1,6 @@
 package com.remotemotorcontroller.ui
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -23,9 +24,6 @@ class ControlActivity : AppCompatActivity() {
     private lateinit var toggleMotorButton: ToggleButton
     private lateinit var calibrateButton: Button
 
-    private lateinit var BLEManager: BLEManager
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_control)
@@ -41,8 +39,16 @@ class ControlActivity : AppCompatActivity() {
         toggleMotorButton = findViewById(R.id.toggleMotor)
         calibrateButton = findViewById(R.id.buttonCalibrate)
 
-        BLEManager = BLEManager(this)
+    }
+    @SuppressLint("MissingPermission")
+    override fun onStart() {
+        super.onStart()
 
+        val dev = BLEManager.getConectedDevice()
+        connectionText.text = if (dev != null)
+            "Connected to ${dev.name ?: dev.address}"
+        else
+            "Not connected..."
 
 
     }

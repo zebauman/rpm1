@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.RecyclerView
 import com.remotemotorcontroller.R
 import com.remotemotorcontroller.adapter.DeviceAdapter
@@ -15,13 +16,29 @@ import com.remotemotorcontroller.ble.BLEManager
 
 
 class ScanActivity : AppCompatActivity() {
-    private lateinit var bleManager: BLEManager
     private lateinit var scanButton: Button
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var deviceAdapter: DeviceAdapter
 
     private var isScanning = false
+
+    private val requiredPermissions = arrayOf(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.all { it.value }
+        if (!allGranted) {
+            Toast.makeText(this, "Permissions not granted", Toast.LENGTH_SHORT).show()
+        }else{
+            startScan()
+        }
+    }
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,19 +52,18 @@ class ScanActivity : AppCompatActivity() {
         recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
         recyclerView.adapter = deviceAdapter
 
-        bleManager = BLEManager(this)
-        bleManager.setDeviceFoundListener{ device ->
+        BLEManager.setDeviceFoundListener{ device ->
             runOnUiThread {
                 deviceAdapter.addOrUpdateDevice(device)
             }
         }
-        bleManager.setDeviceRemovedListener { device ->
+        BLEManager.setDeviceRemovedListener { device ->
             runOnUiThread {
                 deviceAdapter.removeDevice(device)
             }
         }
 
-        bleManager.setConnectionStateListener { device, connected ->
+        BLEManager.setConnectionStateListener { device, connected ->
             runOnUiThread {
                 if(connected){
                     Toast.makeText(this, "Connected to ${device.name ?: "Unknown"}", Toast.LENGTH_SHORT).show()
@@ -67,26 +83,37 @@ class ScanActivity : AppCompatActivity() {
         if(isScanning){
             stopScan()
         }else{
+            checkPermissionsAndScan()
+        }
+    }
+
+    private fun checkPermissionsAndScan(){
+        val missingPermissions = requiredPermissions.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        if(missingPermissions.isEmpty()){
             startScan()
+        }else{
+            permissionLauncher.launch(missingPermissions.toTypedArray())
         }
     }
 
     @SuppressLint("MissingPermission")
     private fun startScan(){
-        bleManager.startScan()
+        BLEManager.startScan()
         scanButton.text = getString(R.string.stop_scanning)
         isScanning = true
     }
 
     @SuppressLint("MissingPermission")
     private fun stopScan(){
-        bleManager.stopScan()
+        BLEManager.stopScan()
         scanButton.text = getString(R.string.start_scanning)
         isScanning = false
     }
 
     @SuppressLint("MissingPermission")
     private fun connectToDevice(device: BluetoothDevice){
-        bleManager.connect(device)
+        BLEManager.connect(device)
     }
 }
