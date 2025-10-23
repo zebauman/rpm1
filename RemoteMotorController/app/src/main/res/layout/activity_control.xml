@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     tools:context=".ui.ControlActivity">
 
     <!-- Top App Bar -->
@@ -16,66 +16,164 @@
         android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
         android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
-        app:navigationContentDescription="Back"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="BLE Device Scanner"
+        app:navigationContentDescription="Back"
+        app:title="Motor Control"
         app:titleCentered="true"
         app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
-
-    <TextView
-        android:id="@+id/textConnection"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Not connected"
-        android:textStyle="bold"
-        android:textSize="18sp"
-        android:paddingBottom="12dp"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <EditText
-        android:id="@+id/inputRpm"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Target RPM"
-        android:inputType="number" />
+        <!-- Connection status -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardUseCompatPadding="true"
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp">
 
-    <EditText
-        android:id="@+id/inputAngle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Target Angle"
-        android:inputType="number" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
 
-    <ToggleButton
-        android:id="@+id/toggleMotor"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textOn="Motor ON"
-        android:textOff="Motor OFF"
-        android:paddingTop="12dp" />
+                <TextView
+                    android:id="@+id/textConnection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Not connected"
+                    android:textStyle="bold"
+                    android:textSize="18sp" />
 
-    <Button
-        android:id="@+id/buttonCalibrate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Calibrate"
-        android:layout_marginTop="8dp" />
+                <TextView
+                    android:id="@+id/textRpm"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="RPM: --"
+                    android:textSize="14sp"
+                    android:layout_marginTop="6dp" />
 
-    <TextView
-        android:id="@+id/textRpm"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="RPM: --"
-        android:paddingTop="16dp"
-        android:textSize="16sp" />
+                <TextView
+                    android:id="@+id/textAngle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Angle: --"
+                    android:textSize="14sp"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-    <TextView
-        android:id="@+id/textAngle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="RPM: --"
-        android:paddingTop="16dp"
-        android:textSize="16sp" />
+        <!-- RPM continuous control -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardUseCompatPadding="true"
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/inputRpmLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Target RPM"
+                    app:counterEnabled="true"
+                    app:counterMaxLength="6">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputRpm"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        tools:text="1200" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonStartRpm"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Start RPM" />
+
+                    <Space
+                        android:layout_width="12dp"
+                        android:layout_height="wrap_content" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonStopRpm"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Stop" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Angle one-shot move -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardUseCompatPadding="true"
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/inputAngleLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Target Angle (deg or ticks)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputAngle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        tools:text="90" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonSendAngle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Move to Angle" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Calibrate -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonCalibrate"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Calibrate"
+            android:layout_marginTop="14dp" />
+
+    </LinearLayout>
 </LinearLayout>
