@@ -10,7 +10,7 @@ This firmware provides the **Bluetooth Low Energy (BLE) connectivity** for a rem
 
 - Connectable advertising with a **128-bit service UUID**
 - Custom GATT
-    - **COMMAND* characteristic (Write): drive mode/target for Motor
+    - **COMMAND** characteristic (Write): drive mode/target for Motor
     - **Telemetry** characteristic (Notify): status/speed/position
     - CCC to enable/disable notifications
     - Little-endian framework for the payloads
