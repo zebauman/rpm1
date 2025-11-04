@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.BluetoothLeScanner
@@ -74,7 +75,7 @@ object BLEManager {
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var cleanupJob: Job? = null
 
-    private var telemCallback: ((status:Int, speed: Long, position: Long) -> Unit)? = null
+    private var telemCallback: ((status:Int, speed: Int, position: Int) -> Unit)? = null
 
     // CALLBACK FUNCTIONS
     // CALLBACK FUNCTION FOR GATT
@@ -103,15 +104,40 @@ object BLEManager {
                 charCmd = serv.getCharacteristic(BLEContract.CHAR_CMD)
                 charTelem = serv.getCharacteristic(BLEContract.CHAR_TELEM)
 
-                // charTelem?.let{ enableNotifications()}
-                Log.i("BLE", "SERVICES AND CHARACTERISTICS CACHED.")
+                charTelem?.let{ enableNotifications(gatt, charTelem!!)}
+
+                Log.i("BLE", "SERVICES AND CHARACTERISTICS CACHED. NOTIFICATION ENABLED.")
             }else{
                 Log.e("BLE", "FAILED TO DISCOVER SERVICES for ${gatt.device?.address}")
             }
         }
 
+        @SuppressLint("MissingPermission")
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            Log.i("BLE","Current Value = ${value.contentToString()}")
+            parseTelemetry(value)
+        }
+
     }
 
+    // HELPER FUNCTION FOR CONVERTING THE RAW BYTES INTO THE VALUES
+    private fun parseTelemetry(value: ByteArray){
+        if(value.size < 9) return;
+        val status = value[0].toInt() and 0xFF
+        val speed = ((value[1].toInt() and 0xFF) or ((value[2].toInt() and 0xFF) shl 8) or
+                ((value[3].toInt() and 0xFF) shl 16) or ((value[4].toInt() and 0xFF) shl 24))
+        val position = ((value[5].toInt() and 0xFF) or ((value[6].toInt() and 0xFF) shl 8) or
+                ((value[7]).toInt() shl 16) or ((value[8].toInt() and 0xFF) shl 24))
+
+        Log.i("BLE", "Status: $status, Speed: $speed, Position: $position")
+
+        telemCallback?.invoke(status, speed, position)
+
+    }
 
     // CALLBACK FUNCTION FOR BLE SCAN
     @SuppressLint("MissingPermission")
@@ -205,10 +231,36 @@ object BLEManager {
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            bluetoothGatt?.writeCharacteristic(ch, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+            bluetoothGatt?.writeCharacteristic(ch, payload,
+                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
         }else{
             ch.value = payload
             bluetoothGatt?.writeCharacteristic(ch)
+        }
+    }
+
+    // HELPER FUNCTION FOR ENABLING NOTIFICATIONS ON THE BLE GATT FOR A CHARACTERISTIC
+    @SuppressLint("MissingPermission")
+    private fun enableNotifications(gatt: BluetoothGatt, ch: BluetoothGattCharacteristic){
+     // CHECK IF THE CHARACTERISTIC HAS THE PROPERTY OF NOTIFY/INDICATE
+        val ok = gatt.setCharacteristicNotification(ch, true)
+        if(!ok){
+            Log.e("BLE", "Failed to enable notifications for ${ch.uuid}")
+            return
+        }
+
+        val cccd = ch.getDescriptor(BLEContract.DESC_CCCD)
+        if(cccd == null){
+            Log.e("BLE", "CCCD descriptor not found for ${ch.uuid}")
+            return
+        }
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            gatt.writeDescriptor(cccd, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+        }
+        else{
+            cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+            gatt.writeDescriptor(cccd)
         }
     }
 
@@ -219,7 +271,7 @@ object BLEManager {
     fun setPosition(pos: Int) = writeCommand(BLEContract.CMD_POSITION, pos)
 
     // SETTERS FOR THE LISTENER FUNCTIONS
-    fun setTelemetryListener(l: (status: Int, speed: Long, position: Long) -> Unit) {
+    fun setTelemetryListener(l: (status: Int, speed: Int, position: Int) -> Unit) {
         telemCallback = l
     }
     fun setDeviceFoundListener(listener: (BleTimeDevice) -> Unit){

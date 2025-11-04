@@ -2,11 +2,18 @@ package com.remotemotorcontroller.ui
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
 import com.google.android.material.button.MaterialButton
 import com.remotemotorcontroller.R
 import com.remotemotorcontroller.ble.BLEManager
@@ -27,6 +34,15 @@ class ControlActivity : AppCompatActivity() {
     private lateinit var sendAngleButton: MaterialButton
 
     private lateinit var calibrateButton: Button
+
+    // RPM CHART
+    private lateinit var dataChart: LineChart
+    private lateinit var rpmData: LineDataSet
+    private lateinit var angleData: LineDataSet
+
+    private var xValue = 0f
+    private val dt = 0.2f
+    private val maxPoints = 600
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,19 +90,76 @@ class ControlActivity : AppCompatActivity() {
             }
         }
 
+        rpmData = LineDataSet(mutableListOf(), "Motor RPM").apply{
+            setDrawCircles(false)
+            setDrawValues(false)
+            lineWidth = 2f
+            mode = LineDataSet.Mode.LINEAR
+            color = ContextCompat.getColor(this@ControlActivity, R.color.black)
+        }
 
+        angleData = LineDataSet(mutableListOf(), "Motor Angle").apply{
+            setDrawValues(false)
+            setDrawCircles(false)
+            lineWidth = 2f
+            mode = LineDataSet.Mode.LINEAR
+            color = ContextCompat.getColor(this@ControlActivity, R.color.purple)
+        }
 
+        dataChart = findViewById(R.id.chartRpm)
+        dataChart.data = LineData(rpmData, angleData)
+        dataChart.apply{
+            description.isEnabled = false
+            setTouchEnabled(true)
+            isDragEnabled = true
+            setScaleEnabled(true)
+            setPinchZoom(true)
+            axisRight.isEnabled = true
+            xAxis.position = XAxis.XAxisPosition.BOTTOM
+            legend.isEnabled = true
+        }
 
+        BLEManager.setTelemetryListener{ status, speed: Int, position : Int ->
+            runOnUiThread {
+                if(BLEManager.getConectedDevice() == null){
+                    connectionText.text = "Not connected"
+                    return@runOnUiThread
+                }
+                connectionText.text = "Connected to ${BLEManager.getConnectedDeviceName()}"
+                updateRpmText.text = "RPM: $speed"
+                updateAngleText.text = "Angle: $position"
+                appendPoint(speed, position)
+
+            }
+        }
     }
+
     @SuppressLint("MissingPermission")
     override fun onStart() {
         super.onStart()
+        if (BLEManager.getConectedDevice() == null) {
+            Log.e("BLE", "No device connected")
+        }
+    }
 
-        val dev = BLEManager.getConectedDevice()
-        connectionText.text = if (dev != null)
-            "Connected to ${dev.name ?: dev.address}"
-        else
-            "Not connected..."
+    private fun appendPoint(rpm: Int, angle: Int){
+        xValue += dt
+        
+        rpmData.addEntry(Entry(xValue, rpm.toFloat()))
+        angleData.addEntry(Entry(xValue, angle.toFloat()))
+        
+        if(rpmData.entryCount > maxPoints){
+            rpmData.removeFirst()
+        }
+        if(angleData.entryCount > maxPoints){
+            angleData.removeFirst()
+        }
 
+        
+        dataChart.data.notifyDataChanged()
+        dataChart.notifyDataSetChanged()
+
+        dataChart.setVisibleXRangeMaximum(maxPoints * dt)
+        dataChart.moveViewToX(xValue)
     }
 }
