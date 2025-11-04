@@ -25,7 +25,7 @@ This firmware provides the **Bluetooth Low Energy (BLE) connectivity** for a rem
 | Command        | `d10b46cd-412a-4d15-a7bb-092a329eed46` | Write        | `[1B cmd][4B value_le]`              |
 | Telemetry      | `17da15e5-05b1-42df-8d9d-d7645d6d9293` | Notify (+R)  | `[1B status][4B speed][4B pos_deg]`  |
 
-> CCC (0x2902) follows Telemetry value. You can add **Characteristic User Description** (0x2901) to show human-readable names in generic scanner apps.
+> CCC (0x2902) follows Telemetry value.
 
 ---
 
