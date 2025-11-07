@@ -7,6 +7,7 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/hwinfo.h>
 
 #include "bluetooth.h"
 
@@ -17,6 +18,7 @@ LOG_MODULE_REGISTER(bluetooth, LOG_LEVEL_INF);
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 #define ADV_LEN 12
+#define MY_COMPANY_ID 0x706D
 
 #define LED0_NODE DT_ALIAS(led0)
 #define LED1_NODE DT_ALIAS(led1)
@@ -41,11 +43,25 @@ static struct bt_uuid_128 motor_cmd_char_uuid = BT_UUID_INIT_128(
 static struct bt_uuid_128 motor_telemetry_char_uuid = BT_UUID_INIT_128(
 	BT_UUID_128_ENCODE(0x17da15e5, 0x05b1, 0x42df, 0x8d9d, 0xd7645d6d9293));
 
+static uint8_t dev_id_le[6]; // 64-bit device ID LITTLE-ENDIAN
+static uint8_t msd[2 + 6]; // MANUFACTURER SPECIFIC DATA; 2 BYTES COMPANY ID + 6 BYTES DEVICE ID
 
 // FORWARD DECLARATIONS
 void motor_notify_telemetry(void);
 
 
+static void build_ids(void){
+	int ret = hwinfo_get_device_id(dev_id_le, sizeof(dev_id_le));
+	if(ret < 0){
+		LOG_ERR("Failed to get device ID from HWINFO (err %d)", ret);
+		memset(dev_id_le, 0, sizeof(dev_id_le));
+	}
+	// BUILD MANUFACTURER SPECIFIC DATA
+	sys_put_le16(MY_COMPANY_ID, &msd[0]); // COMPANY ID
+	memcpy(&msd[2], dev_id_le, sizeof(dev_id_le)); // DEVICE ID
+	// []
+
+}
 
 // WRITE CALLBACK FOR MOTOR COMMAND CHARACTERISTIC
 // EXPECTS 4 BYTES: [command (1 byte)] [value (4 bytes)]
@@ -170,15 +186,17 @@ void bt_ready(int err)
 		.interval_max = 0x40,
 		.peer = NULL,
 	};
+	build_ids();
 
 	// ADVERTISING DATA - 31 BYTES MAX
 	const struct bt_data ad[] = {
-		BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-		BT_DATA_BYTES(BT_DATA_UUID128_ALL,BT_UUID_128_ENCODE(0xc52081ba, 0xe90f, 0x40e4, 0xa99f, 0xccaa4fd11c15)),
+		BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)), // FLAGS 3 BYTES
+		BT_DATA_BYTES(BT_DATA_UUID128_ALL,BT_UUID_128_ENCODE(0xc52081ba, 0xe90f, 0x40e4, 0xa99f, 0xccaa4fd11c15)), // MOTOR SERVICE UUID 16 BYTES + 2 BYTES LENGTH/TYPE = 18 BYTES
+		BT_DATA(BT_DATA_MANUFACTURER_DATA, msd, sizeof(msd)), // MANUFACTURER SPECIFIC DATA 6 BYTES + 2 BYTES LENGTH/TYPE = 8 BYTES
 	};
 	// SCAN RESPONSE DATA - 31 BYTES MAX
 	const struct bt_data sd[] = {
-		BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
+		BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN)
 	};
 
 	err = bt_le_adv_start(&adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));

@@ -6,7 +6,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/hwinfo.h>
 #include "bluetooth.h"
+#include <stdio.h>
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
@@ -37,7 +39,7 @@ int main(void)
 {
     configure_leds();
 
-    LOG_INF("Starting Bluetooth Motor Control Application");
+    LOG_INF("Starting Bluetooth Motor Control Application");    
 
     memset(&motor_ctx, 0, sizeof(motor_ctx));
 
