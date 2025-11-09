@@ -4,12 +4,21 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.remotemotorcontroller.App
+
 import com.remotemotorcontroller.R
+import com.remotemotorcontroller.ble.BLEManager
+import com.remotemotorcontroller.settings.SettingsRepository
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var navScanButton: Button
     private lateinit var navControlButton: Button
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,6 +34,22 @@ class MainActivity : AppCompatActivity() {
         navControlButton.setOnClickListener {
             val intent = Intent(this, ControlActivity::class.java)
             startActivity(intent)
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                (application as App).repo.settings.collect { appSettings ->
+                    BLEManager.applyConfig(
+                        autoReconnectEnabled = appSettings.ar.autoReconnect,
+                        companyId = appSettings.ar.companyId,
+                        deviceId = appSettings.ar.deviceId6,
+                        arTimeoutMs = appSettings.ar.timeoutMs,
+                        arRetryMs = appSettings.ar.retryInterval,
+                        scanMode = appSettings.ble.scanMode,
+                        cleanupDurationMs = appSettings.ble.cleanupDurationMs
+                    )
+                }
+            }
         }
     }
 

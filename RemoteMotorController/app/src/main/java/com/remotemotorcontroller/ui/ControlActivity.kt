@@ -128,7 +128,7 @@ class ControlActivity : AppCompatActivity() {
 
         BLEManager.setTelemetryListener{ status, speed: Int, position : Int ->
             runOnUiThread {
-                if(BLEManager.getConectedDevice() == null){
+                if(BLEManager.getConnectedDevice() == null){
                     connectionText.text = "Not connected"
                     return@runOnUiThread
                 }
@@ -144,7 +144,7 @@ class ControlActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     override fun onStart() {
         super.onStart()
-        if (BLEManager.getConectedDevice() == null) {
+        if (BLEManager.getConnectedDevice() == null) {
             Log.e("BLE", "No device connected")
         }
     }

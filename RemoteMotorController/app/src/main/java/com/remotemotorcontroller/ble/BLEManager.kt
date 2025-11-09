@@ -20,6 +20,7 @@ import android.os.Build
 import android.os.ParcelUuid
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.lifecycle.lifecycleScope
 import com.remotemotorcontroller.adapter.BleTimeDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,16 +59,17 @@ object BLEManager {
     // INFORMATION REGARDING DISCOVERING SERVICES, READING, AND WRITING CHARACTERISTICS
     private var bluetoothGatt: BluetoothGatt? = null
     private var connectedDevice: BluetoothDevice? = null
-    fun getConectedDevice(): BluetoothDevice? = connectedDevice
+    fun getConnectedDevice(): BluetoothDevice? = connectedDevice
     private var userInitDisconnect: Boolean = false
 
-    // TODO: REPLACE THIS WITH SETTING CONFIG
+    // CONFIGURED WITH SETTINGS TO LOCAL VARIABLES
     private var autoReconnectEnabled = true
     private var arCompanyId: Int = 0x706D
     private var arDeviceId: ByteArray? = null
     private var arTimeoutMs = 20_000L
     private var arRetryMs = 500L
     private var scanMode: Int = ScanSettings.SCAN_MODE_LOW_LATENCY
+    private var cleanupDurationMs: Long = 5_000L
 
 
     @SuppressLint("MissingPermission")
@@ -147,7 +149,7 @@ object BLEManager {
                 charTelem = serv.getCharacteristic(BLEContract.CHAR_TELEM)
 
                 charTelem?.let{ enableNotifications(gatt, it)}
-                Log.i("BLE", "TESTING DEVICE ID: ${arDeviceId}")
+                Log.i("BLE", "TESTING DEVICE ID: ${arDeviceId?.contentToString()}")
 
                 Log.i("BLE", "SERVICES AND CHARACTERISTICS CACHED. NOTIFICATION ENABLED.")
             }else{
@@ -232,7 +234,7 @@ object BLEManager {
         }
         // DON'T START MULTIPLE JOBS -> ONLY ONE
         if(cleanupJob == null || !cleanupJob!!.isActive){
-            cleanupJob = startCleanupJob()
+            cleanupJob = startCleanupJob(cleanupDurationMs)
         }
         scannedDevices.clear()
 
@@ -324,6 +326,7 @@ object BLEManager {
         bluetoothGatt?.close() // CLOSE ANY PREVIOUS CONNECTIONS
         connectedDevice = device.bDevice
         bluetoothGatt = device.bDevice.connectGatt(appCtx, false, gattCallback)
+        Log.i("BLE","DEVICE ID TEST ${arDeviceId.contentToString()}")
     }
 
     @SuppressLint("MissingPermission")
@@ -410,7 +413,8 @@ object BLEManager {
     }
 
     private fun startCleanupJob(
-        delayMs: Long = 5_000
+        delayMs: Long = 5_000,
+
     ) : Job{
         return coroutineScope.launch {
             while (isActive) {
@@ -435,4 +439,21 @@ object BLEManager {
         }
     }
 
+    fun applyConfig(
+        autoReconnectEnabled: Boolean,
+        companyId: Int,
+        deviceId: ByteArray?,
+        arTimeoutMs: Long,
+        arRetryMs: Long,
+        scanMode: Int,
+        cleanupDurationMs: Long
+    ){
+        this.autoReconnectEnabled = autoReconnectEnabled
+        this.arCompanyId = companyId
+        this.arDeviceId = deviceId
+        this.arTimeoutMs = arTimeoutMs
+        this.arRetryMs = arRetryMs
+        this.scanMode = scanMode
+        this.cleanupDurationMs = cleanupDurationMs
+    }
 }

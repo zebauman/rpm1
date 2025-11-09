@@ -9,11 +9,14 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import com.remotemotorcontroller.App
 import com.remotemotorcontroller.R
 import com.remotemotorcontroller.adapter.BleTimeDevice
 import com.remotemotorcontroller.adapter.DeviceAdapter
 import com.remotemotorcontroller.ble.BLEManager
+import kotlinx.coroutines.launch
 
 
 class ScanActivity : AppCompatActivity() {
@@ -121,5 +124,16 @@ class ScanActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun connectToDevice(device: BleTimeDevice){
         BLEManager.connect(device)
+        val repo = (application as App).repo
+        if(device.devId != null){
+            lifecycleScope.launch {
+                repo.setDeviceId6(device.devId!!)
+            }
+        }else{
+            lifecycleScope.launch {
+                repo.clearDeviceId6()
+            }
+
+        }
     }
 }
