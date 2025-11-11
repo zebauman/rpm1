@@ -52,9 +52,6 @@ object BLEManager {
     private var isScanning = false
     fun isScanning(): Boolean = isScanning
 
-    // TODO: ADD TO SETTINGS CONFIG
-    private var filterScanDevice = true // DETERMINE whether to filter the BLE devices when scanning based on service UUID
-
     // BLE GATT CLIENT -> ALLOWS FOR CONNECTION TO BLE GATT SERVERS
     // INFORMATION REGARDING DISCOVERING SERVICES, READING, AND WRITING CHARACTERISTICS
     private var bluetoothGatt: BluetoothGatt? = null
@@ -68,6 +65,7 @@ object BLEManager {
     private var arDeviceId: ByteArray? = null
     private var arTimeoutMs = 20_000L
     private var arRetryMs = 500L
+    private var filterScanDevice = true // DETERMINE whether to filter the BLE devices when scanning based on service UUID
     private var scanMode: Int = ScanSettings.SCAN_MODE_LOW_LATENCY
     private var cleanupDurationMs: Long = 5_000L
 
@@ -370,7 +368,7 @@ object BLEManager {
     // HELPER FUNCTION FOR ENABLING NOTIFICATIONS ON THE BLE GATT FOR A CHARACTERISTIC
     @SuppressLint("MissingPermission")
     private fun enableNotifications(gatt: BluetoothGatt, ch: BluetoothGattCharacteristic){
-     // CHECK IF THE CHARACTERISTIC HAS THE PROPERTY OF NOTIFY/INDICATE
+        // CHECK IF THE CHARACTERISTIC HAS THE PROPERTY OF NOTIFY/INDICATE
         val ok = gatt.setCharacteristicNotification(ch, true)
         if(!ok){
             Log.e("BLE", "Failed to enable notifications for ${ch.uuid}")
@@ -415,7 +413,7 @@ object BLEManager {
     private fun startCleanupJob(
         delayMs: Long = 5_000,
 
-    ) : Job{
+        ) : Job{
         return coroutineScope.launch {
             while (isActive) {
                 delay(delayMs)
@@ -446,8 +444,10 @@ object BLEManager {
         arTimeoutMs: Long,
         arRetryMs: Long,
         scanMode: Int,
-        cleanupDurationMs: Long
+        cleanupDurationMs: Long,
+        filterScanDevice: Boolean
     ){
+        Log.i("BLE", "filterscan TEST: $filterScanDevice")
         this.autoReconnectEnabled = autoReconnectEnabled
         this.arCompanyId = companyId
         this.arDeviceId = deviceId
@@ -455,5 +455,6 @@ object BLEManager {
         this.arRetryMs = arRetryMs
         this.scanMode = scanMode
         this.cleanupDurationMs = cleanupDurationMs
+        this.filterScanDevice = filterScanDevice
     }
 }

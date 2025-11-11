@@ -33,6 +33,7 @@
         
         <activity android:name=".ui.ControlActivity"/>
         <activity android:name=".ui.ScanActivity"/>
+        <activity android:name=".ui.SettingActivity"/>
     </application>
 
 </manifest>

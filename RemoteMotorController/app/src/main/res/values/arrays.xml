@@ -1,0 +1,12 @@
+<resources>
+    <string-array name="scan_mode_names">
+        <item>LOW_POWER (0)</item>
+        <item>BALANCED (1)</item>
+        <item>LOW_LATENCY (2)</item>
+    </string-array>
+    <integer-array name="scan_mode_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </integer-array>
+</resources>

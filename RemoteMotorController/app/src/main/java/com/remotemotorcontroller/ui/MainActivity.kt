@@ -11,13 +11,13 @@ import com.remotemotorcontroller.App
 
 import com.remotemotorcontroller.R
 import com.remotemotorcontroller.ble.BLEManager
-import com.remotemotorcontroller.settings.SettingsRepository
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var navScanButton: Button
     private lateinit var navControlButton: Button
+    private lateinit var navSettingButton: Button
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
 
         navScanButton = findViewById(R.id.NavScanButton)
         navControlButton = findViewById(R.id.NavControlButton)
+        navSettingButton = findViewById(R.id.SettingsButton)
 
         navScanButton.setOnClickListener {
             val intent = Intent(this, ScanActivity::class.java)
@@ -33,6 +34,10 @@ class MainActivity : AppCompatActivity() {
         }
         navControlButton.setOnClickListener {
             val intent = Intent(this, ControlActivity::class.java)
+            startActivity(intent)
+        }
+        navSettingButton.setOnClickListener{
+            val intent = Intent(this, SettingActivity::class.java)
             startActivity(intent)
         }
 
@@ -46,7 +51,8 @@ class MainActivity : AppCompatActivity() {
                         arTimeoutMs = appSettings.ar.timeoutMs,
                         arRetryMs = appSettings.ar.retryInterval,
                         scanMode = appSettings.ble.scanMode,
-                        cleanupDurationMs = appSettings.ble.cleanupDurationMs
+                        cleanupDurationMs = appSettings.ble.cleanupDurationMs,
+                        filterScanDevice = appSettings.ble.filterScanDevice
                     )
                 }
             }

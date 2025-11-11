@@ -54,5 +54,23 @@
             app:cornerRadius="18dp"
             tools:ignore="TouchTargetSizeCheck"/>
 
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/SettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            app:cornerRadius="18dp"
+            app:iconTint="?attr/colorOnPrimaryContainer"
+            app:backgroundTint="?attr/colorPrimaryContainer"
+            tools:ignore="TouchTargetSizeCheck"/>
+
+
+
     </LinearLayout>
 </LinearLayout>
