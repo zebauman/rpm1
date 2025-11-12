@@ -24,8 +24,6 @@ import kotlinx.coroutines.launch
 
 class ScanFragment : Fragment(R.layout.fragment_scan) {
     private lateinit var scanButton: Button
-    private lateinit var topAppBar: androidx.appcompat.widget.Toolbar
-
     private lateinit var recyclerView: RecyclerView
     private lateinit var deviceAdapter: DeviceAdapter
 
@@ -82,11 +80,6 @@ class ScanFragment : Fragment(R.layout.fragment_scan) {
         scanButton = view.findViewById(R.id.scanButton)
         scanButton.setOnClickListener {
             toggleScan()
-        }
-
-        topAppBar = view.findViewById(R.id.topAppBar)
-        topAppBar.setNavigationOnClickListener {
-            requireActivity().onBackPressedDispatcher.onBackPressed() // GO TO THE VIEW THAT CALL THIS ACTIVITY
         }
     }
     private fun toggleScan(){
