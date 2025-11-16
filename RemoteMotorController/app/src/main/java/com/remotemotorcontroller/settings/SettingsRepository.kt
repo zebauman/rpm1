@@ -22,10 +22,13 @@ class SettingsRepository(private val ctx: Context) {
         val scanMode = preferences[SettingsKeys.SCAN_MODE] ?: ScanSettings.SCAN_MODE_LOW_LATENCY
         val cleanupDurationMs = preferences[SettingsKeys.CLEANUP_DURATION_MS] ?: 5_000L
 
+        val maxPoints = preferences[SettingsKeys.MAX_POINTS] ?: 600
+
         AppSettings(ar = AutoReconnectSettings(autoReconnect,companyId,
             deviceId6, timeoutMs = timeoutMs,
             retryInterval = retryMs),
-            ble= BleSettings(filterScanDevice, scanMode, cleanupDurationMs))
+            ble= BleSettings(filterScanDevice, scanMode, cleanupDurationMs),
+            analy = AnalyticSettings(maxPoints))
     }
 
     // HELPER FUNCTIONS TO WRITE
@@ -49,4 +52,6 @@ class SettingsRepository(private val ctx: Context) {
     suspend fun setScanMode(mode: Int) = ctx.settingsDataStore.edit { it[SettingsKeys.SCAN_MODE] = mode }
     suspend fun setCleanupDuration(cleanupDurationMs: Long) = ctx.settingsDataStore.edit { it[SettingsKeys.CLEANUP_DURATION_MS] = cleanupDurationMs}
 
+    // ANALYTIC SETTINGS
+    suspend fun setMaxPoints(points: Int) = ctx.settingsDataStore.edit{ it[SettingsKeys.MAX_POINTS] = points}
 }

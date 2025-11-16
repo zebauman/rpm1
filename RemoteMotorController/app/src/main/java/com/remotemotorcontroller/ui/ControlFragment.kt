@@ -68,40 +68,6 @@ class ControlFragment : Fragment(R.layout.fragment_control) {
             }
         }
 
-//        angleData = LineDataSet(mutableListOf(), "Motor Angle").apply{
-//            setDrawValues(false)
-//            setDrawCircles(false)
-//            lineWidth = 2f
-//            mode = LineDataSet.Mode.LINEAR
-//            color = ContextCompat.getColor(this@ControlActivity, R.color.purple)
-//        }
-//
-//        dataChart = findViewById(R.id.chartRpm)
-//        dataChart.data = LineData(rpmData, angleData)
-//        dataChart.apply{
-//            description.isEnabled = false
-//            setTouchEnabled(true)
-//            isDragEnabled = true
-//            setScaleEnabled(true)
-//            setPinchZoom(true)
-//            axisRight.isEnabled = true
-//            xAxis.position = XAxis.XAxisPosition.BOTTOM
-//            legend.isEnabled = true
-//        }
-
-//        BLEManager.setTelemetryListener{ status, speed: Int, position : Int ->
-//            runOnUiThread {
-//                if(BLEManager.getConnectedDevice() == null){
-//                    connectionText.text = "Not connected"
-//                    return@runOnUiThread
-//                }
-//                connectionText.text = "Connected to ${BLEManager.getConnectedDeviceName()}"
-//                updateRpmText.text = "RPM: $speed"
-//                updateAngleText.text = "Angle: $position"
-//                appendPoint(speed, position)
-//
-//            }
-//        }
     }
 
     @SuppressLint("MissingPermission")
@@ -120,28 +86,4 @@ class ControlFragment : Fragment(R.layout.fragment_control) {
         startStopMotorButton.text = "STOP MOTOR"
         startStopMotorButton.setIconResource(R.drawable.ic_stop)
     }
-
-
-//    private fun appendPoint(rpm: Int, angle: Int){
-//        xValue += dt
-//
-//        rpmData.addEntry(Entry(xValue, rpm.toFloat()))
-//        angleData.addEntry(Entry(xValue, angle.toFloat()))
-//
-//        if(rpmData.entryCount > maxPoints){
-//            rpmData.removeFirst()
-//        }
-//        if(angleData.entryCount > maxPoints){
-//            angleData.removeFirst()
-//        }
-//
-//
-//        dataChart.data.notifyDataChanged()
-//        dataChart.notifyDataSetChanged()
-//
-//        dataChart.setVisibleXRangeMaximum(maxPoints * dt)
-//        dataChart.moveViewToX(xValue)
-//    }
-
-
 }

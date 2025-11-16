@@ -16,6 +16,8 @@ object SettingsKeys{
     val SCAN_MODE = intPreferencesKey("scan_mode")
     val CLEANUP_DURATION_MS = longPreferencesKey("cleanup_duration_ms")
 
+    val MAX_POINTS = intPreferencesKey("max_points")
+
 }
 data class AutoReconnectSettings(
     val autoReconnect: Boolean = true,
@@ -29,7 +31,11 @@ data class BleSettings(
     val scanMode: Int = ScanSettings.SCAN_MODE_LOW_LATENCY,
     val cleanupDurationMs: Long = 5_000,
 )
+data class AnalyticSettings(
+    val maxPoints: Int = 600
+)
 data class AppSettings(
     val ar: AutoReconnectSettings = AutoReconnectSettings(),
-    val ble: BleSettings = BleSettings()
+    val ble: BleSettings = BleSettings(),
+    val analy: AnalyticSettings = AnalyticSettings()
 )

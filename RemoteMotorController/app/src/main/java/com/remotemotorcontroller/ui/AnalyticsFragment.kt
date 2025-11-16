@@ -23,6 +23,7 @@ class AnalyticsFragment : Fragment(R.layout.fragment_analytics) {
 
     private lateinit var chart: LineChart
     private lateinit var startStopBtn: MaterialButton
+    private lateinit var resetBtn: MaterialButton
 
     private lateinit var rpmData: LineDataSet
     private lateinit var angleData: LineDataSet
@@ -37,6 +38,7 @@ class AnalyticsFragment : Fragment(R.layout.fragment_analytics) {
 
         chart = view.findViewById(R.id.chartTelemetry)
         startStopBtn = view.findViewById(R.id.buttonPlayPause)
+        resetBtn = view.findViewById(R.id.buttonReset)
 
         // Chart setup
         chart.apply {
@@ -82,6 +84,12 @@ class AnalyticsFragment : Fragment(R.layout.fragment_analytics) {
             }
         }
 
+        resetBtn.setOnClickListener {
+            viewModel.reset()
+            chart.invalidate()
+
+        }
+
         // Collect telemetry when fragment is visible
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -96,6 +104,9 @@ class AnalyticsFragment : Fragment(R.layout.fragment_analytics) {
         if(!paused) updateGraph()
     }
 
+    public fun applyConfig(maxPts: Int){
+        viewModel.applyConfig(maxPts)
+    }
     private fun updateGraph() {
         if (viewModel.rpmEntries.isEmpty()) return
 

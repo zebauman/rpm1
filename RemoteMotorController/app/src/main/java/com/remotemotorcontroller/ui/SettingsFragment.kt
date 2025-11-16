@@ -29,11 +29,12 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         view.findViewById<View>(R.id.rowBleConfig).setOnClickListener{ showBleSheet() }
         view.findViewById<View>(R.id.rowARConfig).setOnClickListener { showArSheet() }
+        view.findViewById<View>(R.id.rowAnalyConfig).setOnClickListener { showAnalySheet() }
     }
 
     fun showBleSheet(){
         val sheet = ConfigBottomSheet.new("BLE Configuration", R.layout.bs_ble_config)
-        sheet.show(parentFragmentManager,"ar")
+        sheet.show(parentFragmentManager,"ble")
 
         parentFragmentManager.executePendingTransactions()
         val root = sheet.dialog?.findViewById<View>(R.id.bsContent) ?: return
@@ -79,7 +80,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     fun showArSheet(){
         val sheet = ConfigBottomSheet.new("Auto-Reconnect Configuration", R.layout.bs_ar_config)
-        sheet.show(parentFragmentManager,"ble")
+        sheet.show(parentFragmentManager,"ar")
 
         parentFragmentManager.executePendingTransactions()
         val root = sheet.dialog?.findViewById<View>(R.id.bsContent) ?: return
@@ -136,4 +137,33 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         }
+    fun showAnalySheet(){
+        val sheet = ConfigBottomSheet.new("Analytic Settings", R.layout.bs_analy_config)
+        sheet.show(parentFragmentManager,"ar")
+
+        parentFragmentManager.executePendingTransactions()
+        val root = sheet.dialog?.findViewById<View>(R.id.bsContent) ?: return
+
+        val inMaxPts = root.findViewById<TextInputEditText>(R.id.inMaxPts)
+        val btnSaveAnaly = root.findViewById<MaterialButton>(R.id.btnSaveAnaly)
+
+        lifecycleScope.launch {
+            val cfg = repo.settings.first()
+            inMaxPts.setText(cfg.analy.maxPoints.toString())
+        }
+        btnSaveAnaly.setOnClickListener {
+            lifecycleScope.launch{
+                val newMaxPts = inMaxPts.text.toString().toIntOrNull() ?: 600
+                if(newMaxPts <= 0){
+                    inMaxPts.error = "Enter Points Greater than 0"
+                    return@launch
+                }
+                repo.setMaxPoints(newMaxPts)
+                Toast.makeText(requireContext(), "Saved", android.widget.Toast.LENGTH_SHORT).show()
+                sheet.dismiss()
+
+            }
+        }
+
+    }
 }

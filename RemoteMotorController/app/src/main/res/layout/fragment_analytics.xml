@@ -16,9 +16,20 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end|top"
         android:layout_margin="12dp"
-    app:icon="@drawable/ic_pause"
-    app:iconSize="20dp"
-    app:rippleColor="?attr/colorPrimary"
-    />
+        app:icon="@drawable/ic_pause"
+        app:iconSize="20dp"
+        app:rippleColor="?attr/colorPrimary" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonReset"
+        style="@style/Widget.Material3.Button.Icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|top"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="64dp"
+        app:icon="@drawable/ic_refresh"
+        app:iconSize="20dp"
+        app:rippleColor="?attr/colorPrimary" />
 
 </FrameLayout>

@@ -12,7 +12,7 @@ class AnalyticsViewModel : ViewModel() {
 
     companion object{
         const val DT = 1f
-        const val MAX_POINTS = 600
+        var MAX_POINTS = 600
     }
     var xValue = 0f
         private set
@@ -45,6 +45,11 @@ class AnalyticsViewModel : ViewModel() {
         xValue = 0f
         rpmEntries.clear()
         angleEntries.clear()
+        _updates.tryEmit(Unit)
+    }
+
+    fun applyConfig(maxPts: Int){
+        MAX_POINTS = maxPts
         _updates.tryEmit(Unit)
     }
 }
