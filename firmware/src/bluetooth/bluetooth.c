@@ -20,6 +20,8 @@ LOG_MODULE_REGISTER(bluetooth, LOG_LEVEL_INF);
 #define ADV_LEN 12
 #define MY_COMPANY_ID 0x706D
 
+#define FIXED_PASSKEY 123456
+
 #define LED0_NODE DT_ALIAS(led0)
 #define LED1_NODE DT_ALIAS(led1)
 #define LED2_NODE DT_ALIAS(led2)
@@ -49,6 +51,30 @@ static uint8_t msd[2 + 6]; // MANUFACTURER SPECIFIC DATA; 2 BYTES COMPANY ID + 6
 // FORWARD DECLARATIONS
 void motor_notify_telemetry(void);
 
+static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey){
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	LOG_INF("Passkey for %s: %06u", addr, passkey);
+}
+
+static void auth_cancel(struct bt_conn *conn){
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	LOG_INF("Pairing cancelled: %s", addr);
+}
+
+static struct bt_conn_auth_cb auth_cb_display = {
+	.passkey_display = auth_passkey_display,
+	.passkey_entry = NULL,
+	.cancel = auth_cancel,
+};
+
+static void auth_pairing_confirm(struct bt_conn *conn){
+	char addr[BT_ADDR_LE_STR_LEN];
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	LOG_INF("Pairing confirmed: %s", addr);
+}
 
 static void build_ids(void){
 	int ret = hwinfo_get_device_id(dev_id_le, sizeof(dev_id_le)); // WILL ONLY GET THE FIRST 6 BYTES
@@ -105,7 +131,7 @@ BT_GATT_SERVICE_DEFINE(motor_svc, BT_GATT_PRIMARY_SERVICE(&motor_srv_uuid),
 	// SIXTH is USER DATA (NULL IF NONE)
 	BT_GATT_CHARACTERISTIC(&motor_cmd_char_uuid.uuid,
 				   BT_GATT_CHRC_WRITE,
-			       BT_GATT_PERM_WRITE,
+			       BT_GATT_PERM_WRITE_AUTHEN,
 			       NULL, write_motor, NULL), 
 	// MOTOR TELEMETRY CHARACTERISTIC - NOTIFY ONLY
 	BT_GATT_CHARACTERISTIC(&motor_telemetry_char_uuid.uuid,
@@ -114,7 +140,7 @@ BT_GATT_SERVICE_DEFINE(motor_svc, BT_GATT_PRIMARY_SERVICE(&motor_srv_uuid),
 			       NULL, NULL, NULL),   
 	// CLIENT CHARACTERISTIC CONFIGURATION (CCC) - FOR ENABLING/DISABLING NOTIFICATIONS
 	BT_GATT_CCC(motor_ccc_cfg_changed,
-		    BT_GATT_PERM_READ | BT_GATT_PERM_WRITE)
+		    BT_GATT_PERM_READ | BT_GATT_PERM_WRITE_AUTHEN)
 	);
 
 // [STATUS (1 BYTE)] [SPEED (4 BYTES)] [POSITION (4 BYTES)] = 9 BYTES TOTAL
@@ -155,6 +181,14 @@ void bt_ready(int err)
 	}
 
 	LOG_INF("Bluetooth initialized");
+
+	// REGISTER THE AUTH CALLBACKS -> DISPLAY ONLY CAPABLITY ON THE ANDROID
+	err = bt_conn_auth_cb_register(&auth_cb_display);
+	if(err){
+		LOG_ERR("Failled to register auth callbacks (err %d)\n", err);
+	}
+
+	bt_passkey_set(FIXED_PASSKEY);
 
 	// START ADVERTISING
 	struct bt_le_adv_param adv_param = {
