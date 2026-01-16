@@ -232,8 +232,23 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	LOG_INF("Disconnected (reason %u)", reason);
 }
+static void security_changed(struct bt_conn *conn, bt_security_t level, enum bt_security_err err)
+{
+    char addr[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
+    if (!err) {
+        // BT_SECURITY_L4 is the enum for Level 4
+        LOG_INF("Security changed: %s level %u", addr, level);
+        if (level == BT_SECURITY_L4) {
+            LOG_INF("SECURE CONNECTION (Level 4) ESTABLISHED!");
+        }
+    } else {
+        LOG_ERR("Security failed: %s level %u err %d", addr, level, err);
+    }
+}
 struct bt_conn_cb conn_callbacks = {
 	.connected = connected,
 	.disconnected = disconnected,
+	.security_changed = security_changed,
 };
