@@ -1,0 +1,37 @@
+&flash0{
+    /delete-node/ partitions;
+    partitions{
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        // BOOT PARITION NEED 48KB (0xC000), 32 KB IS LIMIT
+        boot_partition: partition@0{
+            label = "mcuboot";
+            reg = <0x00000000 0x0000C000>;
+        };
+        
+        slot0_partition: partition@c000{
+            label = "image-0";
+            reg = <0x0000C000 0x0004B000>;
+        };
+
+        // SLOT 1 - UPDATE STAGING (WHERE THE NEXT VERSION EXISTS)
+        slot1_partition: partition@57000{
+            label = "image-1";
+            reg = <0x00057000 0x0004B000>;
+        };
+
+        // SCRATCH - SWAP WORKSPACE (BETWEEN THE SLOTS)
+        scratch_partition: partition@a2000{
+            label = "image-scratch";
+            reg = <0x000A2000 0x00001000>;
+        };
+
+        // STORAGE NVS AND SETTINGS FOR 16KB
+        storage_partition: partition@a3000{
+            label = "storage";
+            reg = <0x000A3000 0x00004000>;
+        };
+    };
+};

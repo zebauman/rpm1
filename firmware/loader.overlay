@@ -1,0 +1,6 @@
+/* loader.overlay - FORCE BOOTLOADER LOCATION */
+/ {
+    chosen {
+        zephyr,code-partition = &boot_partition;
+    };
+};

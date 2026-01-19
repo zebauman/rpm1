@@ -47,3 +47,23 @@ All multi-byte values are **little-endian**.
 [1..4] speed_le: int32 rpm
 [5..8] post_le: int32 degrees (0..359)
 
+
+MCUBOOTLOADER BUILD (INSIDE THE FIRMWARE DIRECTORY, ... is zephyr workplace)
+```
+west build -p -b nucleo_wb55rg -d build-mcuboot .../external/bootloader/mcuboot/boot/zephyr -- -DDTC_OVERLAY_FILE=".../CAPSTONE/rpm1/firmware/app.overlay;.../CAPSTONE/rpm1/firmware/loader.overlay"     
+```
+
+MCUBOOTLOADER FLASH
+```
+west flash -d build-mcuboot
+```
+
+PROGRAM BUILD
+```
+west build -p -b nucleo_wb55rg
+```
+
+PROGRAM FLASH w/ SIGNED HEX FILE
+```
+west flash --hex-file build/zephyr/zephyr.signed.hex
+```
