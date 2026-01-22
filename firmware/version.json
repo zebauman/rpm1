@@ -1,5 +1,5 @@
 {
-    "version": 3,
-    "downloadUrl": "",
-    "notes": "Init Setup. No Updates."
+    "version": 2,
+    "downloadUrl": "https://github.com/zebauman/rpm1/releases/download/test/zephyr.signed.bin",
+    "notes": "testing the update."
 }
