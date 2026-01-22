@@ -1,6 +1,8 @@
 package com.remotemotorcontroller.ui
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -15,6 +17,7 @@ import com.remotemotorcontroller.App
 import com.remotemotorcontroller.R
 import com.remotemotorcontroller.adapter.AnalyticsViewModel
 import com.remotemotorcontroller.ble.BLEManager
+import com.remotemotorcontroller.data.GitHubRawRepo
 import com.remotemotorcontroller.ui.widgets.DeviceHeader
 import com.remotemotorcontroller.ui.widgets.LiveSummaryView
 import kotlinx.coroutines.launch
@@ -24,6 +27,8 @@ class ShellActivity : AppCompatActivity() {
 
     private lateinit var deviceHeader: DeviceHeader
     private lateinit var liveSummary: LiveSummaryView
+
+    private var hasCheckedForUpdate = false  // TRACKS if the current device has checked for a hardware update (remove redundancy)
 
     private val viewModel: AnalyticsViewModel by viewModels()
 
@@ -67,6 +72,8 @@ class ShellActivity : AppCompatActivity() {
                             deviceHeader.setSubtitle("")
                             liveSummary.isVisible = false
                             deviceHeader.setDisconnectVisible(false)
+
+                            hasCheckedForUpdate = false
                         } else {
                             val name = cs.name ?: "Unknown"
                             deviceHeader.setConnectionTitle(
@@ -76,6 +83,10 @@ class ShellActivity : AppCompatActivity() {
                             deviceHeader.setDisconnectVisible(true)
 
                             liveSummary.isVisible = true
+                            if(!hasCheckedForUpdate){
+                                hasCheckedForUpdate = true
+                                checkForFirmwareUpdate()
+                            }
                         }
                     }
                 }
@@ -89,5 +100,61 @@ class ShellActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun checkForFirmwareUpdate(){
+        // todo: GET THE ACTUAL HARDWARE VERSION VIA BLUETOOTH (ADD TO THE BLE PROTOCOL)
+        val version = 1
+
+        GitHubRawRepo.checkForUpdate(
+            currentVersion = version,
+            onUpdateFound = {manifest ->
+                runOnUiThread {
+                    showUpdateDialog(manifest.version, manifest.notes, manifest.downloadUrl)
+                }
+            },
+            onError = { msg ->
+                runOnUiThread {
+                    Toast.makeText(this, "Error Checking for Update: $msg", Toast.LENGTH_LONG).show()
+                }
+            }
+        )
+    }
+
+    private fun showUpdateDialog(newVersion: Int, notes: String, downloadUrl: String){
+        AlertDialog.Builder(this)
+            .setTitle("New Firmware Available")
+            .setMessage("Version $newVersion is available. \n\nChanges:\n$notes")
+            .setPositiveButton("Update Now"){_, _ ->
+                startDownload(downloadUrl)
+            }
+            .setNegativeButton("Later", null)
+            .show()
+    }
+
+    private fun startDownload(url: String){
+        Toast.makeText(this, "Downloading...", Toast.LENGTH_SHORT).show()
+
+        GitHubRawRepo.downloadFirmware(
+            url = url,
+            onSuccess = {firmwareBytes ->
+                BLEManager.startFirmwareUpdate(
+                    binaryData = firmwareBytes,
+                    onProgress = {percentage ->
+                        //todo: add progress bar for percentage (int out of 100)
+                    },
+                    onResult = {success, msg ->
+                        runOnUiThread{
+                            Toast.makeText(this, "Update Complete: $success", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            },
+            onFailure = {msg ->
+                runOnUiThread{
+                    Toast.makeText(this, "Update Failure: $msg",Toast.LENGTH_LONG).show()
+                }
+            }
+        )
     }
 }

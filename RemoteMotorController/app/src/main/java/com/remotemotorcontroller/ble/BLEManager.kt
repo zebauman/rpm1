@@ -37,6 +37,11 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
+import io.runtime.mcumgr.ble.McuMgrBleTransport
+import io.runtime.mcumgr.dfu.FirmwareUpgradeCallback
+import io.runtime.mcumgr.dfu.FirmwareUpgradeController
+import io.runtime.mcumgr.dfu.FirmwareUpgradeManager
+import io.runtime.mcumgr.exception.McuMgrException
 @SuppressLint("StaticFieldLeak")
 object BLEManager {
 
@@ -97,6 +102,9 @@ object BLEManager {
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var cleanupJob: Job? = null // PERIODICALLY CLEAN UP THE STALE DEVICES FOR SCANNING
     private var reconnectJob: Job? = null
+
+    // FIRMWARE UPDATE MANAGER VAR
+    private var dfuManager: FirmwareUpgradeManager? = null
 
     fun init(context: Context){
         appCtx = context.applicationContext
@@ -466,5 +474,82 @@ object BLEManager {
         this.scanMode = scanMode
         this.cleanupDurationMs = cleanupDurationMs
         this.filterScanDevice = filterScanDevice
+    }
+
+    fun startFirmwareUpdate(
+        binaryData: ByteArray,
+        onProgress: (Int) -> Unit,
+        onResult: (Boolean, String?) -> Unit
+    ){
+        val device = connectedDevice
+        if(device == null){
+            onResult(false, "No Device Connected")
+            return
+        }
+
+        // MCU MGR CONNECTION LAYER FOR THE UPDATE
+        val transport = McuMgrBleTransport(appCtx, device)
+
+        // INITIALIZE THE FIRMWARE UPDATE MANAGER WITH THE CALLBACKS
+        dfuManager = FirmwareUpgradeManager(transport, null).apply{
+            setMode(FirmwareUpgradeManager.Mode.TEST_AND_CONFIRM)
+            setFirmwareUpgradeCallback(object : FirmwareUpgradeCallback {
+                override fun onUpgradeStarted(controller: FirmwareUpgradeController?) {
+                    Log.i("OTA", "Upgrade Started")
+                    onProgress(0)
+                }
+
+                override fun onStateChanged(
+                    prevState: FirmwareUpgradeManager.State?,
+                    newState: FirmwareUpgradeManager.State?
+                ) {
+                    Log.i("OTA", "State: $newState")
+                    if(newState == FirmwareUpgradeManager.State.UPLOAD){
+                        onProgress(0)
+                    }
+                }
+
+                override fun onUpgradeCompleted() {
+                    Log.i("OTA", "Upgrade Complete")
+                    transport.release() // RELEASE THE CONNECTION
+                    onResult(true, "Update Successful")
+                }
+
+                override fun onUpgradeFailed(
+                    state: FirmwareUpgradeManager.State?,
+                    error: McuMgrException?
+                ) {
+                    Log.e("OTA", "Upgrade Failed: ${error?.message}")
+                    transport.release()
+                    onResult(false, error?.message)
+                }
+
+                override fun onUpgradeCanceled(state: FirmwareUpgradeManager.State?) {
+                    Log.w("OTA", "Upgrade Canceled")
+                    transport.release()
+                    onResult(false, "Canceled")
+                }
+
+                override fun onUploadProgressChanged(
+                    bytesSent: Int,
+                    imageSize: Int,
+                    timestamp: Long
+                ) {
+                    val progress = ((bytesSent.toFloat()/imageSize.toFloat())*100).toInt()
+                    onProgress(progress)
+                }
+
+            })
+        }
+
+        try{
+            dfuManager?.start(binaryData)
+        }catch(e: Exception){
+            onResult(false, "Failed to start: ${e.message}")
+        }
+    }
+
+    fun cancelFirmwareUpdate(){
+        dfuManager?.cancel()
     }
 }
