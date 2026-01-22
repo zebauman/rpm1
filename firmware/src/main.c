@@ -19,6 +19,7 @@ int main(void)
 {
 
     LOG_INF("Starting Bluetooth Motor Control Application");    
+    LOG_INF("VERSION 3");
 
     memset(&motor_ctx, 0, sizeof(motor_ctx));
 
