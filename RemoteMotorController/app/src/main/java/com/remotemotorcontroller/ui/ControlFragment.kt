@@ -6,8 +6,11 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
+import androidx.compose.material3.OutlinedButton
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputEditText
 import com.remotemotorcontroller.R
 import com.remotemotorcontroller.ble.BLEManager
@@ -22,7 +25,11 @@ class ControlFragment : Fragment(R.layout.fragment_control) {
     private lateinit var sendAngleButton: MaterialButton
 
     private lateinit var calibrateButton: Button
-    private var motorStart = true
+
+    private lateinit var rpmToggleGroup: MaterialButtonToggleGroup
+
+    private lateinit var angleToggleGroup: MaterialButtonToggleGroup
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -34,14 +41,40 @@ class ControlFragment : Fragment(R.layout.fragment_control) {
         sendAngleButton = view.findViewById(R.id.buttonSendAngle)
         calibrateButton = view.findViewById(R.id.buttonCalibrate)
 
+        rpmToggleGroup = view.findViewById(R.id.toggleRpmDirection)
+        angleToggleGroup = view.findViewById(R.id.toggleAngleDirection)
+
+        restoreUiState()
+
+        targetRpmEditText.doAfterTextChanged {
+            ControlUIState.rpmInput = it.toString()
+        }
+        targetAngleEditText.doAfterTextChanged {
+            ControlUIState.angleInput = it.toString()
+        }
+
+        rpmToggleGroup.addOnButtonCheckedListener{ _, checkedId, isChecked ->
+            if (isChecked) ControlUIState.isRpmCcw = (checkedId == R.id.btnRpmCcw)
+        }
+        angleToggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) ControlUIState.isAngleCcw = (checkedId == R.id.btnAngleCcw)
+        }
+
         calibrateButton.setOnClickListener {
             BLEManager.calibrate()
+            Toast.makeText(requireContext(), "Calibrating...", Toast.LENGTH_SHORT).show()
         }
 
         startStopMotorButton.setOnClickListener {
-            if (motorStart) { // MOTOR STARTING
-                val rpm = targetRpmEditText.text.toString().toIntOrNull()
+            if (!ControlUIState.isMotorRunning) { // MOTOR STARTING
+                var rpm = targetRpmEditText.text.toString().toIntOrNull()
                 if (rpm != null) {
+                    // COUNTER CLOCKWISE == NEGATIVE VALUES FOR MOTOR
+                    if(rpmToggleGroup.checkedButtonId == R.id.btnRpmCcw){
+                        rpm = -rpm
+                    }
+
+                    ControlUIState.isMotorRunning = true
                     setStopUi()
                     BLEManager.setSpeed(rpm)
                     Toast.makeText(
@@ -50,40 +83,68 @@ class ControlFragment : Fragment(R.layout.fragment_control) {
                         Toast.LENGTH_SHORT
                     ).show()
                 } else {
-                    Toast.makeText(requireContext(), "Invalid RPM value", Toast.LENGTH_SHORT).show()
+                    targetRpmEditText.error = "Invalid Number"
                 }
             } else { // MOTOR STOPPING
+                ControlUIState.isMotorRunning = false
                 setStartUi()
+
                 BLEManager.shutdown()
                 Toast.makeText(requireContext(), "Stopping motor", Toast.LENGTH_SHORT).show()
             }
         }
         sendAngleButton.setOnClickListener {
-            val angle = targetAngleEditText.text.toString().toIntOrNull()
+            var angle = targetAngleEditText.text.toString().toIntOrNull()
             if (angle != null) {
+                if(angleToggleGroup.checkedButtonId == R.id.btnAngleCcw){
+                    angle = -angle
+                }
                 BLEManager.setPosition(angle)
                 Toast.makeText(requireContext(), "Moving to $angle degrees", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(requireContext(), "Invalid angle value", Toast.LENGTH_SHORT).show()
+                targetAngleEditText.error = "Invalid Number"
             }
         }
 
     }
 
-    @SuppressLint("MissingPermission")
-    override fun onStart() {
-        super.onStart()
+    private fun restoreUiState(){
+        targetRpmEditText.setText(ControlUIState.rpmInput)
+        targetAngleEditText.setText(ControlUIState.angleInput)
+
+        if(ControlUIState.isRpmCcw){
+            rpmToggleGroup.check(R.id.btnRpmCcw)
+        }
+        else{
+            rpmToggleGroup.check(R.id.btnRpmCw)
+        }
+
+        if(ControlUIState.isAngleCcw){
+            angleToggleGroup.check(R.id.btnAngleCcw)
+        }
+        else{
+            angleToggleGroup.check(R.id.btnAngleCw)
+        }
+
+        if(ControlUIState.isMotorRunning){
+            setStopUi()
+        } else {
+            setStartUi()
+        }
     }
 
     private fun setStartUi() {
-        motorStart = true
         startStopMotorButton.text = "START MOTOR"
         startStopMotorButton.setIconResource(R.drawable.ic_play)
+
+        targetRpmEditText.isEnabled = true
+        rpmToggleGroup.isEnabled = true
     }
 
     private fun setStopUi() {
-        motorStart = false
         startStopMotorButton.text = "STOP MOTOR"
         startStopMotorButton.setIconResource(R.drawable.ic_stop)
+
+        targetRpmEditText.isEnabled = false
     }
 }

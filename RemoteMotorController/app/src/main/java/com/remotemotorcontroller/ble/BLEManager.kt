@@ -63,6 +63,8 @@ object BLEManager {
     fun getConnectedDevice(): BluetoothDevice? = connectedDevice
     private var userInitDisconnect: Boolean = false
 
+    private var requestQueue: BleRequestQueue? = null
+
     // CONFIGURED WITH SETTINGS TO LOCAL VARIABLES
     private var autoReconnectEnabled = true
     private var arCompanyId: Int = 0x706D
@@ -103,6 +105,9 @@ object BLEManager {
         bluetoothManager = appCtx.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
         scanner = bluetoothAdapter?.bluetoothLeScanner
+
+        requestQueue = BleRequestQueue(coroutineScope) { bluetoothGatt }
+        requestQueue?.start()
     }
 
     // CALLBACK FUNCTIONS
@@ -128,6 +133,8 @@ object BLEManager {
                 )
                 gatt.close()
                 bluetoothGatt = null
+
+                requestQueue?.clear()
 
                 // AUTO-RECONNECT IFF NOT-USER INIT, ENABLED, AND TARGET ID
                 if(!userInitDisconnect && autoReconnectEnabled && arDeviceId?.size == 6){
@@ -175,6 +182,16 @@ object BLEManager {
         ) {
             Log.i("BLE","Current Value = ${value.contentToString()}")
             parseTelemetry(value)
+        }
+
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt?,
+            characteristic: BluetoothGattCharacteristic?,
+            status: Int
+        ) {
+            super.onCharacteristicWrite(gatt, characteristic, status)
+
+            requestQueue?.onWriteComplete()
         }
 
     }
@@ -336,6 +353,8 @@ object BLEManager {
 
     @SuppressLint("MissingPermission")
     fun disconnect(){
+        requestQueue?.clear()
+
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
 
@@ -369,14 +388,8 @@ object BLEManager {
 
         Log.i("BLE", "Sending command: $cmd, $value")
 
+        requestQueue?.enqueueWrite(ch, payload)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            bluetoothGatt?.writeCharacteristic(ch, payload,
-                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
-        }else{
-            ch.value = payload
-            bluetoothGatt?.writeCharacteristic(ch)
-        }
     }
 
     // HELPER FUNCTION FOR ENABLING NOTIFICATIONS ON THE BLE GATT FOR A CHARACTERISTIC
