@@ -144,8 +144,6 @@ void motor_notify_telemetry(void)
 	}
 }
 
-
-
 // BLUETOOTH INIT & ADVERTISING
 void bt_ready(int err)
 {

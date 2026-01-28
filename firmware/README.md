@@ -37,8 +37,10 @@ All multi-byte values are **little-endian**.
 [0] cmd:
 0x00 = SHUTDOWN
 0X01 = INIT
-0X02 = SET_SPEED (rpm in [1..4])
-0X03 = SET_POSITION (degree in [1..4])
+0X02 = SET_SPEED (rpm in [1..4]) - CLOCKWISE
+0x03 = SET_SPEED - COUNTER-CLOCKWISE
+0X04 = SET_POSITION (degree in [1..4]) - CLOCKWISE
+0x05 = SET_POSITION - COUNTER-CLOCKWISE
 
 [1..4] value_le: int32
 

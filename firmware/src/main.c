@@ -13,14 +13,32 @@
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
+// // WATCHDOG TIMEOUT 2 SECONDS
+// #define WATCHDOG_TIMEOUT_MS 2000
 
+// static struct k_work_delayable watchdog_work;
+
+// void watchdog_kick(void){
+//     k_work_reschedule(&watchdog_work,)
+// }
+
+// // EMERGENCY STOP FUNCTION IF WATCHDOG EXPIRES -> WILL HALT MOTOR
+// void watchdog_expired(struct k_work *work){
+//     LOG_ERR("Watchdog Timer Expired - Connection Lost - HALTING MOTOR.");
+
+//     motor_ctx.last_target = 0;
+//     motor_ctx.motor_status = 0x00;
+
+//     LOG_INF("MOTOR HALTED");
+// }
 
 int main(void)
 {
-
     LOG_INF("Starting Bluetooth Motor Control Application");    
 
     memset(&motor_ctx, 0, sizeof(motor_ctx));
+
+    k_work_init_delayable(&watchdog_work, watchdog_expired);
 
     int err = bt_enable(bt_ready);
     if (err) {

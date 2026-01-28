@@ -8,7 +8,6 @@
     android:background="?attr/colorSurface"
     tools:context=".ui.ControlFragment">
 
-    <!-- App bar (toolbar + device header) that lifts on scroll -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBar"
         android:layout_width="match_parent"
@@ -16,7 +15,6 @@
         android:background="?attr/colorSurface"
         app:liftOnScroll="true">
 
-        <!-- Device/header strip (scrolls with content) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/deviceHeader"
             android:layout_width="match_parent"
@@ -31,7 +29,6 @@
             app:layout_scrollFlags="scroll|enterAlways"/>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Scrolling content -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
         android:layout_width="match_parent"
@@ -47,7 +44,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Live stats card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -55,7 +51,6 @@
                 app:strokeColor="?attr/colorOutline"
                 app:strokeWidth="1dp"/>
 
-            <!-- RPM continuous control -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -86,6 +81,34 @@
                             android:inputType="number"
                             tools:text="1200" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleRpmDirection"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:singleSelection="true"
+                        app:selectionRequired="true"
+                        app:checkedButton="@+id/btnRpmCw">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRpmCcw"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="CCW"
+                            android:tooltipText="Counter-Clockwise"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRpmCw"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="CW"
+                            android:tooltipText="Clockwise"/>
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -121,7 +144,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Angle one-shot move -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -149,6 +171,32 @@
                             android:inputType="number"
                             tools:text="90" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleAngleDirection"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:singleSelection="true"
+                        app:selectionRequired="true"
+                        app:checkedButton="@+id/btnAngleCw">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAngleCcw"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="CCW" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAngleCw"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="CW" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonSendAngle"
