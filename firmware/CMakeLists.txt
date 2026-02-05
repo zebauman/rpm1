@@ -9,4 +9,5 @@ target_sources(app PRIVATE
   src/bluetooth/bluetooth.c
   src/simulation/motor_sim.c
   src/watchdog/watchdog.c
+  src/motor/motor.c
 )

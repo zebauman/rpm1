@@ -16,27 +16,15 @@
 
 // COMMAND CHARACTERISTIC UUID
 #define BT_UUID_MOTOR_CMD_VAL \
-	BT_UUID_128_ENCODE(0xc52081ba, 0xe90f, 0x40e4, 0xa99f, 0xccaa4fd11c15)
+	BT_UUID_128_ENCODE(0xd10b46cd, 0x412a, 0x4d15, 0xa7bb, 0x092a329eed46)
 
 // MOTOR TELEMETRY UUID
-#define BT_UUID_MOTOR_TELEMETRY_VAL \ 
+#define BT_UUID_MOTOR_TELEMETRY_VAL \
 	BT_UUID_128_ENCODE(0x17da15e5, 0x05b1, 0x42df, 0x8d9d, 0xd7645d6d9293)
 
 // MOTOR HEARTBEAT UUID
-#define BT_UUID_MOTOR_HEARTBEAT_VAL \ 
+#define BT_UUID_MOTOR_HEARTBEAT_VAL \
 	BT_UUID_128_ENCODE(0x2215d558, 0xc569, 0x4bd1, 0x8947, 0xb4fd5f9432a0)
-
-// UUIDS FOR THE SERVICES AND CHARACTERISTICS
-// Custom MOTOR Service
-static const struct bt_uuid_128 motor_srv_uuid = BT_UUID_INIT_128(BT_UUID_MOTOR_SERVICE_VAL);
-
-// MOTOR COMMAND CHARACTERISTIC
-static struct bt_uuid_128 motor_cmd_char_uuid = BT_UUID_INIT_128(BT_UUID_MOTOR_CMD_VAL);
-
-// MOTOR TELEMETRY CHARACTERISTIC
-static struct bt_uuid_128 motor_telemetry_char_uuid = BT_UUID_INIT_128(BT_UUID_MOTOR_TELEMETRY_VAL);
-
-
 
 
 enum motor_cmds{
@@ -49,32 +37,24 @@ enum motor_cmds{
 // MOTOR APPLICATION DATA STRUCTURE
 struct motor_app_ctx{
 	// FLAG TO INDICATE IF NOTIFICATIONS ARE ENABLED FOR USER
-	uint8_t notification_enabled; 
+	bool notification_enabled; 
 	
-	// LAST COMMAND RECEIVED FROM USER (0x00 - SHUTDOWN, 0x01 - INIT/Calibrate,
-	//  0x02 - Speed Control (Set target RPM), 0x03 - POSITION CONTROL (Set target angle))
-	uint8_t last_cmd;
-	
-	// LAST COMMAND VALUE (E.G. TARGET RPM OR TARGET ANGLE)
-	int32_t last_target;
-
-	// STATUS OF MOTOR (0x00 - OFF, 0x01 - ON, 0x02 - ERROR)
-	uint8_t motor_status;
-
-	// CURRENT SPEED OF MOTOR (RPM)
-	int32_t current_speed;
-
-	// CURRENT POSITION OF MOTOR (Degrees)
-	int32_t current_position;
+	// HEARTBEAT VALUE -> CONFIRMS BLE SYNCHRONIZATION
+	uint8_t heartbeat_val;
 };
 
-extern struct motor_app_ctx motor_ctx;
+// PUBLIC API GETTERS FOR BLUETOOTH STATS
 
-extern void watchdog_kick(void);
+/** @brief Get the latest heartbeat counter value (received from the phone via BLE)*/
+uint8_t bt_get_heartbeat(void);
+/** @brief Check if the android device has subscribed to notifications*/
+uint8_t bt_is_notify_enabled(void);
 
 void bt_ready(int err);
 
 void motor_notify_telemetry(void);
+
+// MAIN.c has to register the bluetooth
 extern struct bt_conn_cb conn_callbacks;
 
 #endif /* BLUETOOTH_H_ */
